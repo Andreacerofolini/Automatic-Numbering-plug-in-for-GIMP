@@ -23,9 +23,3 @@ This plug-in automates the numbering of images in GIMP, making it easier for use
    - The plug-in will automatically add the specified numbers to your images.
 6. **Save Your Work**:  
    - After numbering, remember to save your images to retain the changes.
-
-## Contributing
-Contributions are welcome! Please fork the repository and submit a pull request for any enhancements or bug fixes.
-
-## License
-This project is licensed under the MIT License.
