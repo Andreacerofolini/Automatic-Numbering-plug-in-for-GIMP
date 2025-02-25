@@ -1,7 +1,7 @@
 # Automatic Numbering Plug-in for GIMP
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
-![GIMP(https://img.shields.io/badge/GIMP-2.10.38+-green.svg)
+![GIMP](https://img.shields.io/badge/GIMP-2.10.38+-green.svg)
 
 
 ## Description
