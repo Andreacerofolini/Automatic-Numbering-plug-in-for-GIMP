@@ -1,5 +1,9 @@
 # Automatic Numbering Plug-in for GIMP
 
+![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
+![GIMP(https://img.shields.io/badge/GIMP-2.10.38+-green.svg)
+
+
 ## Description
 This plug-in automates the numbering of images in GIMP, making it easier for users to manage and organize their images efficiently.
 
