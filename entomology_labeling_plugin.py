@@ -40,7 +40,7 @@ if not os.path.exists(DATA_DIR):
 # Variabile globale per i parametri
 global_params = {}
 
-def add_zeros(number, num_digits):
+def aggiungi_zeri(number, num_digits):
     """Add zeros to the left of the number until you reach num_digits."""
     return str(number).zfill(num_digits)
 
@@ -109,6 +109,9 @@ def pointsSequence(image, drawable, path, font, fontSize, auto_size, boxWidth, b
                    custom_field, custom_field_position):
     global global_params
     
+    # Carica i parametri all'inizio della funzione
+    load_parameters()
+    
     if use_saved_number:
         start_number = global_params["start_number"]
         pdb.gimp_message("Using saved start number: %d" % start_number)
@@ -176,7 +179,8 @@ def pointsSequence(image, drawable, path, font, fontSize, auto_size, boxWidth, b
                         pdb.gimp_layer_set_opacity(rect_layer, rectangle_opacity)
                         log_debug("Rectangle layer created at position: (%d, %d) with opacity: %d" % (int(x), int(y), rectangle_opacity))
 
-                    text_layer = pdb.gimp_text_layer_new(image, number_with_prefix, global_params["font"], global_params["font_size"], 0)
+                    # Utilizzo di TEXT_JUSTIFY_CENTER come valore predefinito per la giustificazione
+                    text_layer = pdb.gimp_text_layer_new(image, number_with_prefix, global_params["font"], global_params["font_size"], TEXT_JUSTIFY_CENTER)
                     if text_layer is not None:
                         text_layer.set_offsets(int(x - text_width / 2), int(y - text_height / 2))
                         image.add_layer(text_layer, 0)
