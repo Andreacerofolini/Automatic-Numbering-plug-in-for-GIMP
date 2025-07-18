@@ -6,6 +6,8 @@
 #   History:
 #
 #   v1.0: 25/02/2025 First published version
+#   v1.1: 21/05/2025 Improved text and rectangle sizing
+#   v1.2: 21/05/2025 Fixed text visibility issues
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -139,6 +141,14 @@ def pointsSequence(image, drawable, path, font, fontSize, auto_size, boxWidth, b
               (global_params["museum_code"], global_params["collection_code"], global_params["font"], 
                global_params["font_size"], start_number))
 
+    # Salva i colori attuali prima di cambiarli
+    old_fg = pdb.gimp_context_get_foreground()
+    old_bg = pdb.gimp_context_get_background()
+    
+    # Imposta i colori: sfondo bianco per il rettangolo, testo nero per visibilità
+    pdb.gimp_context_set_background((255, 255, 255))  # Bianco per il rettangolo
+    pdb.gimp_context_set_foreground((0, 0, 0))        # Nero per il testo
+
     image.undo_group_start()
     try:
         if path is not None:
@@ -162,34 +172,68 @@ def pointsSequence(image, drawable, path, font, fontSize, auto_size, boxWidth, b
 
                     number_with_prefix = "-".join(parts)
                     log_debug("Creating label: %s" % number_with_prefix)
-
-                    text_extents = pdb.gimp_text_get_extents_fontname(number_with_prefix, global_params["font_size"], PIXELS, global_params["font"])
-                    text_width, text_height = int(text_extents[0]), int(text_extents[1])
-
-                    rect_width = text_width + 10 if auto_size else int(boxWidth)
-                    rect_height = text_height + 10 if auto_size else int(boxHeight)
-
-                    log_debug("Creating rectangle: width=%d, height=%d" % (rect_width, rect_height))
-
-                    rect_layer = pdb.gimp_layer_new(image, rect_width, rect_height, RGBA_IMAGE, "Rectangle", 100, NORMAL_MODE)
+                    
+                    # Approccio completamente diverso: creare un layer rettangolare 
+                    # e usare gimp_text_fontname per aggiungere il testo direttamente
+                    
+                    # 1. Calcola le dimensioni appropriate per il rettangolo
+                    if auto_size:
+                        # Stima delle dimensioni del testo basata sulla lunghezza della stringa
+                        char_width = global_params["font_size"] * 0.6  # Stima della larghezza media di un carattere
+                        text_width = len(number_with_prefix) * char_width
+                        text_height = global_params["font_size"] * 1.2  # Stima dell'altezza del testo
+                        
+                        # Aggiungi margini extra
+                        margin_x = max(20, int(global_params["font_size"] * 0.8))
+                        margin_y = max(15, int(global_params["font_size"] * 0.6))
+                        
+                        rect_width = int(text_width + 2*margin_x)
+                        rect_height = int(text_height + 2*margin_y)
+                    else:
+                        rect_width = int(boxWidth)
+                        rect_height = int(boxHeight)
+                    
+                    log_debug("Rectangle dimensions: width=%d, height=%d" % (rect_width, rect_height))
+                    
+                    # 2. Crea il layer del rettangolo
+                    rect_x = int(x - rect_width / 2)
+                    rect_y = int(y - rect_height / 2)
+                    rect_layer = pdb.gimp_layer_new(image, rect_width, rect_height, RGBA_IMAGE, 
+                                                   "Rectangle", 100, NORMAL_MODE)
+                    
                     if rect_layer is not None:
-                        rect_layer.set_offsets(int(x - rect_width / 2), int(y - rect_height / 2))
+                        rect_layer.set_offsets(rect_x, rect_y)
                         image.add_layer(rect_layer, 0)
                         pdb.gimp_edit_fill(rect_layer, BACKGROUND_FILL)
                         pdb.gimp_layer_set_opacity(rect_layer, rectangle_opacity)
-                        log_debug("Rectangle layer created at position: (%d, %d) with opacity: %d" % (int(x), int(y), rectangle_opacity))
-
-                    # Utilizzo di TEXT_JUSTIFY_CENTER come valore predefinito per la giustificazione
-                    text_layer = pdb.gimp_text_layer_new(image, number_with_prefix, global_params["font"], global_params["font_size"], TEXT_JUSTIFY_CENTER)
+                        log_debug("Rectangle layer created at position: (%d, %d)" % (rect_x, rect_y))
+                    
+                    # 3. Calcola la posizione centrale per il testo all'interno del rettangolo
+                    text_x = rect_x + int(rect_width / 2)
+                    text_y = rect_y + int(rect_height / 2)
+                    
+                    # 4. Crea il testo come LAYER SEPARATO
+                    text_layer = pdb.gimp_text_fontname(
+                        image,  # Immagine
+                        None,   # Drawable (None perché stiamo creando un nuovo layer)
+                        text_x - int(len(number_with_prefix) * char_width / 2),  # x position centrata
+                        text_y - int(global_params["font_size"] / 2),  # y position centrata
+                        number_with_prefix,  # Testo
+                        0,       # Border
+                        TRUE,    # Antialias
+                        global_params["font_size"],  # Dimensione del font
+                        PIXELS,  # Unità di misura
+                        global_params["font"]  # Font
+                    )
+                    
                     if text_layer is not None:
-                        text_layer.set_offsets(int(x - text_width / 2), int(y - text_height / 2))
-                        image.add_layer(text_layer, 0)
-                        log_debug("Text layer created at position: (%d, %d)" % (int(x), int(y)))
-
+                        log_debug("Text layer created with text: %s" % number_with_prefix)
+                    
+                    # 5. Unisci i livelli
                     if text_layer is not None and rect_layer is not None:
                         merged_layer = pdb.gimp_image_merge_down(image, text_layer, CLIP_TO_BOTTOM_LAYER)
                         merged_layer.name = "Label-%s-%s-%s" % (global_params["museum_code"], global_params["collection_code"], 
-                                                                aggiungi_zeri(current_number, int(num_cifre)))
+                                                               aggiungi_zeri(current_number, int(num_cifre)))
                         log_debug("Layers merged: %s" % merged_layer.name)
 
             update_parameter("start_number", start_number)
@@ -202,6 +246,10 @@ def pointsSequence(image, drawable, path, font, fontSize, auto_size, boxWidth, b
         error_message = "Error in pointsSequence: %s" % str(e)
         log_debug(error_message)
         pdb.gimp_message(error_message)
+    finally:
+        # Ripristina i colori originali alla fine
+        pdb.gimp_context_set_foreground(old_fg)
+        pdb.gimp_context_set_background(old_bg)
 
     image.undo_group_end()
     log_debug("Script execution completed")
@@ -223,9 +271,9 @@ register(
     "python-fu-entomology-labeling",
     "Add labels to entomology specimens",
     "Add a sequence of numbers on each stroke of the input path for labeling entomology specimens",
-    "Your Name",
-    "Your Name",
-    "2024",
+    "Andrea Cerofolini & Michele Bertoncini",
+    "Andrea Cerofolini & Michele Bertoncini",
+    "2025",
     "<Image>/Filters/Entomology/Add Labels",
     "*",
     [

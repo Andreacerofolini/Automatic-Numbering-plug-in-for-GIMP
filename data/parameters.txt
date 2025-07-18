@@ -1,0 +1,5 @@
+start_number=71440
+museum_code=MZUF
+font_size=25
+font=Arial Bold
+collection_code=VER
